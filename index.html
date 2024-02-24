@@ -1,65 +1,135 @@
-<!DOCTYPE HTML>
+<!DOCTYPE html>
 <html>
 <head>
-    <title>Muter</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-    <link rel="stylesheet" href="assets/css/main.css" />
-    <link rel="icon" href="images/favicon.ico">
+<link rel="icon" href="../images/favicon.png">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+        #videoElement {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            object-fit: contain;
+            z-index: 1;
+        }
+        .pulse {
+            position: absolute;
+            top: 80%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            transition: 0.25s;
+            border-radius: 50%;
+            background-color: transparent;
+            border: 3px solid #ffffff;
+            width: 80px;
+            height: 80px;
+            padding: 0;
+            z-index: 2;
+        }
+        .pulse:after {
+            content: "";
+            display: block;
+            width: 80%;
+            height: 80%;
+            background-color: #ffffff;
+            position: relative;
+            z-index: 1;
+            border-radius: 50%;
+            margin: 10% auto;
+        }
+        #previewImage {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30vw;
+            height: auto;
+            z-index: 3;
+            border: 3px solid #ffffff;
+            border-radius: 15px;
+            box-shadow: 3px 3px 3px #ffffff, -3px -3px 3px #ffffff, -3px 3px 3px #ffffff,  3px -3px 3px #ffffff, 3px 0px 3px #ffffff, -3px -0px 3px #ffffff, 0px 3px 3px #ffffff,  0px -3px 3px #ffffff;
+        }
+        #downloadButton {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            border: none;
+            z-index: 4;
+            display: none;
+        }
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 #ffffff;
+            }
+            70% {
+                box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+</style>
 </head>
-<body class="is-preload">
-    <header id="header">
-        <div class="content">
-            <h1><a>Muter </a><a class="Powered">Powered by Kabuchin</a></h1>
-            <p>Apple製品の撮影音がうるさく、煩わしくありませんか？<br />このウェブアプリで他人に迷惑をかけずに静かに撮影しましょう</p>
-            <ul class="actions">
-                <li><a href="./camera/" class="button primary icon solid">カメラを起動</a></li>
-                <li><a href="#main" class="button icon solid fa-chevron-down scrolly">使い方を見る</a></li>
-            </ul>
-        </div>
-        <div class="image phone">
-            <div class="inner">
-                <img src="images/screen.jpg" alt="" />
-            </div>
-        </div>
-    </header>
-    <section id="main" class="wrapper">
-        <div class="inner">
-            <h2>使い方</h2>
-            <ol>
-                <li>ウェブアプリにアクセスしたら、ポップアップに従いカメラの使用を許可してください。</li>
-                <li>画面下部の丸いボタンを押して撮影してください。</li>
-                <li>ボタンを押しすと、右上に写真が出てきます。その写真を押すと保存できます。</li>
-            </ol>
-            <ul class="actions">
-                <li><a href="./camera/" class="button">カメラを起動する</a></li>
-            </ul>
-        </div>
-    </section>
-    <section id="about" class="wrapper">
-        <div class="inner">
-            <h2>ウェブアプリについて</h2>
-            <ul>
-                <li>保存先はダウンロードフォルダに保存される場合があります。詳しくはブラウザの保存先をご確認ください。</li>
-                <li>このウェブアプリはjavascriptで動作しています。またキャプチャする方式を採用していますので、性能の低い端末をお使いの場合、かくつきがみられる場合があります。</li>
-                <li>このウェブアプリはどなたでも無料で何度でもお使いいただけます。</li>
-                <li>撮影されたカメラに映る映像、撮影した写真等はサーバーには送られませんので安心してお使いください。</li>
-                <li>このウェブアプリを使用したことによる損失、損害については当方は一切責任を負いません。</li>
-                <li>盗撮等は各県の迷惑防止条例違反となりますのでそのような用途には使用しないでください。また、撮影の際は肖像権等を考慮し、十分に注意をして行ってください。</li>
-            </ul>
-        </div>
-    </section>
-    <footer id="footer">
-        <ul class="icons">
-            <li><a href="https://github.com/kabuchin" class="icon brands fa-github"><span class="label">Github</span></a></li>
-        </ul>
-        <p class="copyright">© Kabuchin</p>
-    </footer>
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/jquery.scrolly.min.js"></script>
-    <script src="assets/js/browser.min.js"></script>
-    <script src="assets/js/breakpoints.min.js"></script>
-    <script src="assets/js/util.js"></script>
-    <script src="assets/js/main.js"></script>
+<body>
+<video autoplay="true" id="videoElement"></video>
+<button class="pulse"></button>
+<img id="previewImage" style="display:none; cursor: pointer;" />
+<script>
+var video = document.querySelector("#videoElement");
+var shutterButton = document.querySelector(".pulse");
+var previewImage = document.querySelector("#previewImage");
+
+if (navigator.mediaDevices.getUserMedia) {
+  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }}}).then(function (stream) {
+    video.srcObject = stream;
+  }).catch(function (error) {
+    console.log("Something went wrong!");
+  });
+}
+
+shutterButton.addEventListener("mousedown", function() {
+  shutterButton.style.animation = 'pulse 1s';
+});
+
+shutterButton.addEventListener("mouseup", function() {
+  var canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var context = canvas.getContext('2d');
+  context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+  var dataURL = canvas.toDataURL();
+  previewImage.setAttribute('src', dataURL);
+  previewImage.style.display = 'block';
+  setTimeout(function() {
+    shutterButton.style.animation = '';
+  }, 1000);
+});
+
+previewImage.addEventListener("click", function() {
+  var link = document.createElement('a');
+  var date = new Date();
+  var timestamp = date.getFullYear() + "_" + (date.getMonth() + 1).toString().padStart(2, '0') + "_" + date.getDate().toString().padStart(2, '0') + "_" + date.getHours().toString().padStart(2, '0') + "h" + date.getMinutes().toString().padStart(2, '0') + "m" + date.getSeconds().toString().padStart(2, '0') + "s";
+  link.download = timestamp + '.jpg';
+  fetch(previewImage.src).then(response => response.blob()).then(blob => {
+    var url = window.URL.createObjectURL(blob);
+    link.href = url;
+    link.click();
+  });
+});
+</script>
 </body>
 </html>
