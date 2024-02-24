@@ -123,7 +123,7 @@ previewImage.addEventListener("click", function() {
   var link = document.createElement('a');
   var date = new Date();
   var timestamp = date.getFullYear() + "_" + (date.getMonth() + 1).toString().padStart(2, '0') + "_" + date.getDate().toString().padStart(2, '0') + "_" + date.getHours().toString().padStart(2, '0') + "h" + date.getMinutes().toString().padStart(2, '0') + "m" + date.getSeconds().toString().padStart(2, '0') + "s";
-  link.download = timestamp + '.jpg';
+  link.download = timestamp;
   fetch(previewImage.src).then(response => response.blob()).then(blob => {
     var url = window.URL.createObjectURL(blob);
     link.href = url;
