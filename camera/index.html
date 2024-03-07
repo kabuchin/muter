@@ -2,7 +2,7 @@
 <html>
 <head>
 <link rel="icon" href="../images/favicon.png">
-    <style>
+<style>
         body, html {
             height: 100%;
             margin: 0;
@@ -22,32 +22,32 @@
             object-fit: contain;
             z-index: 1;
         }
-        .pulse {
-            position: absolute;
-            top: 80%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #ffffff;
-            transition: 0.25s;
-            border-radius: 50%;
-            background-color: transparent;
-            border: 3px solid #ffffff;
-            width: 80px;
-            height: 80px;
-            padding: 0;
-            z-index: 2;
-        }
-        .pulse:after {
-            content: "";
-            display: block;
-            width: 80%;
-            height: 80%;
-            background-color: #ffffff;
-            position: relative;
-            z-index: 1;
-            border-radius: 50%;
-            margin: 10% auto;
-        }
+.pulse {
+  position: absolute;
+  top: 80%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
+  transition: 0.25s;
+  border-radius: 50%;
+  background-color: transparent;
+  border: 3px solid #ffffff;
+  width: 80px;
+  height: 80px;
+  padding: 0;
+  z-index: 2;
+}
+.pulse:after {
+  content: "";
+  display: block;
+  width: 80%;
+  height: 80%;
+  background-color: #ffffff;
+  position: relative;
+  z-index: 1;
+  border-radius: 50%;
+  margin: 10% auto;
+}
         #previewImage {
             position: absolute;
             top: 10px;
@@ -82,30 +82,44 @@
                 box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
             }
         }
+#switchButton {
+  position: absolute;
+  top: calc(80% - 25px); /* 撮影ボタンと同じ位置 */
+  left: calc(50% + 70px); /* 撮影ボタンの幅分だけオフセット */
+  width: 50px;
+  height: 50px;
+  background-color: rgba(211, 211, 211, 0.2); /* 背景を半透明の灰色に */
+  border-radius: 50%;
+  border: none;
+  z-index: 4;
+  background-image: url('../images/icon.svg');
+  background-repeat: no-repeat;
+  background-position: center;
+}
 </style>
 </head>
 <body>
 <video autoplay="true" id="videoElement"></video>
-<button class="pulse"></button>
+<button class="pulse" id="shutterButton"></button>
+<button id="switchButton"></button>
 <img id="previewImage" style="display:none; cursor: pointer;" />
 <script>
 var video = document.querySelector("#videoElement");
-var shutterButton = document.querySelector(".pulse");
+var shutterButton = document.querySelector("#shutterButton");
+var switchButton = document.querySelector("#switchButton");
 var previewImage = document.querySelector("#previewImage");
+var useFrontCamera = true;
 
 if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }}}).then(function (stream) {
+  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }, facingMode: useFrontCamera ? "user" : "environment"}}).then(function (stream) {
     video.srcObject = stream;
   }).catch(function (error) {
     console.log("Something went wrong!");
   });
 }
 
-shutterButton.addEventListener("mousedown", function() {
+shutterButton.addEventListener("click", function() {
   shutterButton.style.animation = 'pulse 1s';
-});
-
-shutterButton.addEventListener("mouseup", function() {
   var canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -119,15 +133,13 @@ shutterButton.addEventListener("mouseup", function() {
   }, 1000);
 });
 
-previewImage.addEventListener("click", function() {
-  var link = document.createElement('a');
-  var date = new Date();
-  var timestamp = date.getFullYear() + "_" + (date.getMonth() + 1).toString().padStart(2, '0') + "_" + date.getDate().toString().padStart(2, '0') + "_" + date.getHours().toString().padStart(2, '0') + "h" + date.getMinutes().toString().padStart(2, '0') + "m" + date.getSeconds().toString().padStart(2, '0') + "s";
-  link.download = timestamp;
-  fetch(previewImage.src).then(response => response.blob()).then(blob => {
-    var url = window.URL.createObjectURL(blob);
-    link.href = url;
-    link.click();
+switchButton.addEventListener("click", function() {
+  useFrontCamera = !useFrontCamera;
+  if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
+  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }, facingMode: useFrontCamera ? "user" : "environment"}}).then(function (stream) {
+    video.srcObject = stream;
+  }).catch(function (error) {
+    console.log("Something went wrong!");
   });
 });
 </script>
