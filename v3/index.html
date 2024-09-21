@@ -119,64 +119,53 @@
         let mediaRecorder = null;
         let chunks = [];
         let mode = 'photo'; // 現在のモードを保持
-        let videoDevices = [];
-        let currentCameraIndex = 0;
         let zoomLevel = 1;
         let videoTrack = null;
+        let currentFacingMode = 'environment'; // 初期カメラは背面
 
-// カメラの初期化
-async function initCamera(deviceId) {
-    try {
-        const constraints = {
-            video: { 
-                deviceId: deviceId ? { exact: deviceId } : undefined,
-                width: { ideal: 9999 },
-                height: { ideal: 9999 }
-            },
-            audio: true
-        };
-        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = mediaStream;
-        video.muted = true; // マイクの音を消音にする
+        // カメラの初期化
+        async function initCamera(facingMode) {
+            try {
+                const constraints = {
+                    video: { 
+                        facingMode: facingMode ? { exact: facingMode } : 'environment',
+                        width: { ideal: 9999 },
+                        height: { ideal: 9999 }
+                    },
+                    audio: true
+                };
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = mediaStream;
+                video.muted = true; // マイクの音を消音にする
 
-        // ビデオトラックの取得
-        videoTrack = mediaStream.getVideoTracks()[0];
-        // カメラの能力を取得
-        let capabilities = videoTrack.getCapabilities();
+                // ビデオトラックの取得
+                videoTrack = mediaStream.getVideoTracks()[0];
+                // カメラの能力を取得
+                let capabilities = videoTrack.getCapabilities();
 
-        // 最大解像度を設定
-        let settingsConstraints = {};
-        if (capabilities.width && capabilities.height) {
-            settingsConstraints.width = capabilities.width.max;
-            settingsConstraints.height = capabilities.height.max;
+                // 最大解像度を設定
+                let settingsConstraints = {};
+                if (capabilities.width && capabilities.height) {
+                    settingsConstraints.width = capabilities.width.max;
+                    settingsConstraints.height = capabilities.height.max;
+                }
+                // 初期拡大率を適用
+                if (capabilities.zoom) {
+                    settingsConstraints.zoom = zoomLevel;
+                }
+                if (Object.keys(settingsConstraints).length > 0) {
+                    await videoTrack.applyConstraints(settingsConstraints);
+                }
+
+            } catch (error) {
+                console.error('カメラにアクセスできませんでした：', error);
+            }
         }
-        // 初期拡大率を適用
-        if (capabilities.zoom) {
-            settingsConstraints.zoom = zoomLevel;
-        }
-        if (Object.keys(settingsConstraints).length > 0) {
-            await videoTrack.applyConstraints(settingsConstraints);
-        }
 
-    } catch (error) {
-        console.error('カメラにアクセスできませんでした：', error);
-    }
-}
-
-// カメラを起動
-(async () => {
-    await getVideoDevices();
-    if (videoDevices.length > 0) {
-        await initCamera(videoDevices[currentCameraIndex].deviceId);
-    }
-})();
-
-
-        // デバイスの取得
-        async function getVideoDevices() {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            videoDevices = devices.filter(device => device.kind === 'videoinput');
-        }
+        // カメラを起動
+        (async () => {
+            await initCamera(currentFacingMode);
+        })();
 
         // シャッターボタンのクリックイベント
         shutterButton.addEventListener('click', () => {
@@ -207,15 +196,14 @@ async function initCamera(deviceId) {
 
         // カメラ切替ボタンのクリックイベント
         switchCameraButton.addEventListener('click', async () => {
-            if (videoDevices.length > 1) {
-                // すべてのトラックを停止
+            // すべてのトラックを停止
+            if (mediaStream) {
                 mediaStream.getTracks().forEach(track => track.stop());
-
-                // 次のカメラに切り替え
-                currentCameraIndex = (currentCameraIndex + 1) % videoDevices.length;
-                const deviceId = videoDevices[currentCameraIndex].deviceId;
-                await initCamera(deviceId);
             }
+
+            // カメラの向きを切り替え
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await initCamera(currentFacingMode);
         });
 
         // 写真を撮影
@@ -246,7 +234,26 @@ async function initCamera(deviceId) {
         // 録画を開始
         function startRecording() {
             chunks = [];
-            mediaRecorder = new MediaRecorder(mediaStream, { mimeType: 'video/webm; codecs=vp9' });
+            let options = { mimeType: 'video/webm; codecs=vp9' };
+
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm; codecs=vp8' };
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = { mimeType: 'video/webm' };
+            }
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options = {};
+            }
+
+            try {
+                mediaRecorder = new MediaRecorder(mediaStream, options);
+            } catch (e) {
+                alert('このブラウザ・デバイスでは録画機能がサポートされていません。');
+                console.error('MediaRecorderの初期化に失敗しました：', e);
+                return;
+            }
+
             mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) {
                     chunks.push(e.data);
@@ -265,11 +272,18 @@ async function initCamera(deviceId) {
 
         // 動画を保存
         function saveVideo() {
-            const blob = new Blob(chunks, { type: 'video/webm' });
+            const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'video.webm';
+
+            let fileExtension = 'webm';
+            if (mediaRecorder.mimeType.includes('mp4')) {
+                fileExtension = 'mp4';
+            } else if (mediaRecorder.mimeType.includes('ogg')) {
+                fileExtension = 'ogv';
+            }
+            a.download = 'video.' + fileExtension;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -334,8 +348,6 @@ async function initCamera(deviceId) {
             }
         }
 
-        // カメラを起動
-        initCamera();
     </script>
 </body>
 </html>
