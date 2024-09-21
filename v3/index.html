@@ -10,6 +10,7 @@
             padding: 0;
             overflow: hidden;
             background-color: black;
+            font-family: sans-serif;
         }
         /* ビデオ要素を全画面表示 */
         #video {
@@ -107,6 +108,51 @@
             width: 80%;
             left: 10%;
             display: none;
+            outline: 0;
+            border: 0;
+            border-radius: 500px;
+            transition: box-shadow 0.2s ease-in-out;
+        }
+        /* カスタムスライダーのスタイル（Chrome用） */
+        #zoom-slider::-webkit-slider-runnable-track {
+            height: 40px;
+            background-color: #ddd;
+            border-radius: 500px;
+        }
+        #zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 40px;
+            height: 40px;
+            background: #fff;
+            cursor: ew-resize;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: -340px 0 0 320px #1597ff, inset 0 0 0 40px #1597ff;
+        }
+        #zoom-slider:active::-webkit-slider-thumb {
+            background: #fff;
+            box-shadow: -340px 0 0 320px #1597ff, inset 0 0 0 3px #1597ff;
+        }
+        /* ラベル表示用 */
+        #zoom-label-container {
+            position: absolute;
+            bottom: 150px;
+            width: 80%;
+            left: 10%;
+            display: none;
+        }
+        #zoom-label {
+            position: relative;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 16px;
+        }
+        #zoom-label span {
+            display: inline-block;
+            background-color: #1597ff;
+            padding: 5px 10px;
+            border-radius: 10px;
         }
     </style>
 </head>
@@ -124,6 +170,10 @@
     </div>
     <!-- 拡大スライダー -->
     <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
+    <!-- 拡大率ラベル -->
+    <div id="zoom-label-container">
+        <div id="zoom-label"><span>x1.0</span></div>
+    </div>
     <script>
         const video = document.getElementById('video');
         const shutterButton = document.getElementById('shutter-button');
@@ -132,6 +182,8 @@
         const switchCameraButton = document.getElementById('switch-camera');
         const zoomButton = document.getElementById('zoom-button');
         const zoomSlider = document.getElementById('zoom-slider');
+        const zoomLabelContainer = document.getElementById('zoom-label-container');
+        const zoomLabel = document.getElementById('zoom-label');
 
         let mediaStream = null;
         let mediaRecorder = null;
@@ -140,6 +192,16 @@
         let zoomLevel = 1;
         let videoTrack = null;
         let currentFacingMode = 'environment'; // 初期カメラは背面
+
+        // OSの判定
+        function getOS() {
+            const userAgent = window.navigator.userAgent;
+            if (userAgent.indexOf('Win') !== -1) return 'Windows';
+            if (userAgent.indexOf('Mac') !== -1) return 'MacOS';
+            if (userAgent.indexOf('X11') !== -1) return 'UNIX';
+            if (userAgent.indexOf('Linux') !== -1) return 'Linux';
+            return 'Unknown';
+        }
 
         // カメラの初期化
         async function initCamera(facingMode) {
@@ -170,6 +232,12 @@
                 // 初期拡大率を適用
                 if (capabilities.zoom) {
                     settingsConstraints.zoom = zoomLevel;
+                    // スライダーの最大値と最小値を設定
+                    zoomSlider.min = capabilities.zoom.min;
+                    zoomSlider.max = capabilities.zoom.max;
+                    zoomSlider.step = capabilities.zoom.step || 0.1;
+                } else {
+                    zoomButton.style.display = 'none'; // ズーム非対応なら非表示
                 }
                 if (Object.keys(settingsConstraints).length > 0) {
                     await videoTrack.applyConstraints(settingsConstraints);
@@ -253,6 +321,9 @@
         function startRecording() {
             chunks = [];
             let options = null;
+
+            // OSごとに処理を変える
+            const os = getOS();
 
             // サポートされているMIMEタイプを検出
             const mimeTypes = [
@@ -367,6 +438,7 @@
 
         function showZoomSlider() {
             zoomSlider.style.display = 'block';
+            zoomLabelContainer.style.display = 'block';
             resetZoomSliderTimeout();
         }
 
@@ -383,6 +455,7 @@
                 let constraints = { advanced: [{ zoom: zoomLevel }] };
                 videoTrack.applyConstraints(constraints);
                 zoomButton.textContent = 'x' + zoomLevel.toFixed(1);
+                zoomLabel.querySelector('span').textContent = 'x' + zoomLevel.toFixed(1);
             }
         }
 
@@ -392,8 +465,17 @@
             }
             zoomSliderTimeout = setTimeout(() => {
                 zoomSlider.style.display = 'none';
+                zoomLabelContainer.style.display = 'none';
             }, 3000); // 3秒後に非表示
         }
+
+        // スライダーの色とラベルの更新
+        zoomSlider.addEventListener('input', function() {
+            let rangePercent = ((zoomSlider.value - zoomSlider.min) / (zoomSlider.max - zoomSlider.min)) * 100;
+            zoomLabel.querySelector('span').textContent = 'x' + zoomLevel.toFixed(1);
+            zoomLabel.style.left = `calc(${rangePercent}% + (${8 - rangePercent * 0.15}px))`;
+            zoomSlider.style.filter = `hue-rotate(-${rangePercent}deg)`;
+        });
 
     </script>
 </body>
