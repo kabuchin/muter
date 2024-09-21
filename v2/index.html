@@ -124,45 +124,53 @@
         let zoomLevel = 1;
         let videoTrack = null;
 
-        // カメラの初期化
-        async function initCamera(deviceId) {
-            try {
-                await getVideoDevices();
-                const constraints = {
-                    video: { 
-                        deviceId: deviceId ? { exact: deviceId } : undefined,
-                        width: { ideal: 9999 },
-                        height: { ideal: 9999 }
-                    },
-                    audio: true
-                };
-                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = mediaStream;
-                video.muted = true; // マイクの音を消音にする
+// カメラの初期化
+async function initCamera(deviceId) {
+    try {
+        const constraints = {
+            video: { 
+                deviceId: deviceId ? { exact: deviceId } : undefined,
+                width: { ideal: 9999 },
+                height: { ideal: 9999 }
+            },
+            audio: true
+        };
+        mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = mediaStream;
+        video.muted = true; // マイクの音を消音にする
 
-                // ビデオトラックの取得
-                videoTrack = mediaStream.getVideoTracks()[0];
-                // カメラの能力を取得
-                let capabilities = videoTrack.getCapabilities();
+        // ビデオトラックの取得
+        videoTrack = mediaStream.getVideoTracks()[0];
+        // カメラの能力を取得
+        let capabilities = videoTrack.getCapabilities();
 
-                // 最大解像度を設定
-                let settingsConstraints = {};
-                if (capabilities.width && capabilities.height) {
-                    settingsConstraints.width = capabilities.width.max;
-                    settingsConstraints.height = capabilities.height.max;
-                }
-                // 初期拡大率を適用
-                if (capabilities.zoom) {
-                    settingsConstraints.zoom = zoomLevel;
-                }
-                if (Object.keys(settingsConstraints).length > 0) {
-                    await videoTrack.applyConstraints(settingsConstraints);
-                }
-
-            } catch (error) {
-                console.error('カメラにアクセスできませんでした：', error);
-            }
+        // 最大解像度を設定
+        let settingsConstraints = {};
+        if (capabilities.width && capabilities.height) {
+            settingsConstraints.width = capabilities.width.max;
+            settingsConstraints.height = capabilities.height.max;
         }
+        // 初期拡大率を適用
+        if (capabilities.zoom) {
+            settingsConstraints.zoom = zoomLevel;
+        }
+        if (Object.keys(settingsConstraints).length > 0) {
+            await videoTrack.applyConstraints(settingsConstraints);
+        }
+
+    } catch (error) {
+        console.error('カメラにアクセスできませんでした：', error);
+    }
+}
+
+// カメラを起動
+(async () => {
+    await getVideoDevices();
+    if (videoDevices.length > 0) {
+        await initCamera(videoDevices[currentCameraIndex].deviceId);
+    }
+})();
+
 
         // デバイスの取得
         async function getVideoDevices() {
