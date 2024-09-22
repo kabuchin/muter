@@ -1,147 +1,618 @@
 <!DOCTYPE html>
 <html>
 <head>
-<link rel="icon" href="../images/favicon.png">
-<style>
+    <meta charset="UTF-8">
+    <title>Muter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet" />
+    <link rel="icon" href="../images/favicon.png">
+    <style>
+        /* 全体のスタイルリセット */
         body, html {
-            height: 100%;
             margin: 0;
+            padding: 0;
             overflow: hidden;
+            background-color: black;
+        }
+        /* ビデオ要素を全画面表示 */
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* フラッシュ効果 */
+        #flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s;
+        }
+        /* コントロールの配置 */
+        #controls {
+            position: absolute;
+            top: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+        }
+        /* シャッターボタンのスタイル */
+        #shutter-button {
+            width: 70px;
+            height: 70px;
+            border: 5px solid white;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            margin: 20px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+        #shutter-button:active {
+            background-color: rgba(255,255,255,0.5);
+            transform: scale(0.7);
+        }
+        /* 共通のボタンスタイル */
+        .control-button {
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 50px;
+            height: 50px;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #000;
+            margin: 10px;
+            transition: background-color 0.2s, transform 0.1s;
         }
-        #videoElement {
-            position: fixed;
-            width: 100%;
-            height: 100%;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            object-fit: contain;
-            z-index: 1;
+        .control-button:active {
+            background-color: rgba(255,255,255,0.2);
+            transform: scale(0.7);
         }
-.pulse {
-  position: absolute;
-  top: 80%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #ffffff;
-  transition: 0.25s;
-  border-radius: 50%;
-  background-color: transparent;
-  border: 3px solid #ffffff;
-  width: 80px;
-  height: 80px;
-  padding: 0;
-  z-index: 2;
-}
-.pulse:after {
-  content: "";
-  display: block;
-  width: 80%;
-  height: 80%;
-  background-color: #ffffff;
-  position: relative;
-  z-index: 1;
-  border-radius: 50%;
-  margin: 10% auto;
-}
-        #previewImage {
+        /* 拡大スライダーのスタイル */
+        #zoom-slider {
+            -webkit-appearance: none;
+            width: 80%;
+            margin: 0;
             position: absolute;
-            top: 10px;
-            right: 10px;
-            width: 30vw;
-            height: auto;
-            z-index: 3;
-            border: 3px solid #ffffff;
-            border-radius: 15px;
-            box-shadow: 3px 3px 3px #ffffff, -3px -3px 3px #ffffff, -3px 3px 3px #ffffff,  3px -3px 3px #ffffff, 3px 0px 3px #ffffff, -3px -0px 3px #ffffff, 0px 3px 3px #ffffff,  0px -3px 3px #ffffff;
-        }
-        #downloadButton {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background-color: #ffffff;
-            border: none;
-            z-index: 4;
+            bottom: 100px;
+            left: 10%;
             display: none;
         }
-        @keyframes pulse {
-            0% {
-                box-shadow: 0 0 0 0 #ffffff;
-            }
-            70% {
-                box-shadow: 0 0 0 20px rgba(255, 255, 255, 0);
-            }
-            100% {
-                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
-            }
+        #zoom-slider::-webkit-slider-runnable-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
         }
-#switchButton {
-  position: absolute;
-  top: calc(80% - 25px); /* 撮影ボタンと同じ位置 */
-  left: calc(50% + 70px); /* 撮影ボタンの幅分だけオフセット */
-  width: 50px;
-  height: 50px;
-  background-color: rgba(211, 211, 211, 0.2); /* 背景を半透明の灰色に */
-  border-radius: 50%;
-  border: none;
-  z-index: 4;
-  background-image: url('../images/icon.svg');
-  background-repeat: no-repeat;
-  background-position: center;
-}
-</style>
+        #zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            margin-top: -6px;
+        }
+        #zoom-slider::-moz-range-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        #zoom-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+        }
+        /* Material Symbolsのスタイル */
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 30px; /* アイコンのサイズを調整 */
+            display: inline-block;
+            line-height: 1;
+            text-transform: none;
+            letter-spacing: normal;
+            word-wrap: normal;
+            white-space: nowrap;
+            direction: ltr;
+        }
+        /* 設定ウィンドウのスタイル */
+        #settings-window {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        #settings-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+        }
+        #settings-content h2 {
+            margin-top: 0;
+        }
+        #settings-content div {
+            margin-bottom: 15px;
+        }
+        #settings-content label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        #settings-content select, #settings-content input {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+        #close-settings {
+            width: 100%;
+            padding: 10px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #close-settings:hover {
+            background-color: #1976D2;
+        }
+    </style>
 </head>
 <body>
-<video autoplay="true" id="videoElement"></video>
-<button class="pulse" id="shutterButton"></button>
-<button id="switchButton"></button>
-<img id="previewImage" style="display:none; cursor: pointer;" />
-<script>
-var video = document.querySelector("#videoElement");
-var shutterButton = document.querySelector("#shutterButton");
-var switchButton = document.querySelector("#switchButton");
-var previewImage = document.querySelector("#previewImage");
-var useFrontCamera = true;
+    <!-- カメラ映像の表示 -->
+    <video id="video" autoplay playsinline></video>
+    <!-- フラッシュ効果の要素 -->
+    <div id="flash"></div>
+    <!-- コントロールボタンの配置 -->
+    <div id="controls">
+        <button id="mute-button" class="control-button"><span class="material-symbols-outlined">&#xE029;</span></button>
+        <button id="zoom-button" class="control-button">x1</button>
+        <button id="switch-mode" class="control-button"><span class="material-symbols-outlined">&#xE412;</span></button>
+        <button id="shutter-button"></button>
+        <button id="switch-camera" class="control-button"><span class="material-symbols-outlined">&#xEFEB;</span></button>
+        <button id="settings-button" class="control-button"><span class="material-symbols-outlined">&#xE8B8;</span></button>
+    </div>
+    <!-- 拡大スライダー -->
+    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
+    <!-- 設定ウィンドウ -->
+    <div id="settings-window">
+        <div id="settings-content">
+            <h2>設定</h2>
+            <!-- 写真の出力形式 -->
+            <div>
+                <label for="photo-format">写真の出力形式:</label>
+                <select id="photo-format">
+                    <option value="jpeg">JPEG</option>
+                    <option value="png">PNG</option>
+                </select>
+            </div>
+            <!-- ボタン類の配置 -->
+            <div>
+                <label for="button-layout">ボタン類の配置:</label>
+                <select id="button-layout">
+                    <option value="right">右（縦）</option>
+                    <option value="left">左（縦）</option>
+                    <option value="top">上（横）</option>
+                    <option value="bottom">下（横）</option>
+                </select>
+            </div>
+            <!-- ファイル名の出力形式 -->
+            <div>
+                <label for="filename-format">ファイル名の出力形式:</label>
+                <select id="filename-format">
+                    <option value="muter-yyyy_MM_dd HH;mm-ss">muter-yyyy_MM_dd HH;mm-ss</option>
+                    <option value="muter-yyyy_MM_dd HHmmss">muter-yyyy_MM_dd HHmmss</option>
+                    <option value="muter-yyyy_MM_dd HH;mm">muter-yyyy_MM_dd HH;mm</option>
+                    <option value="muter-yy_MM_dd HH;mm-ss">muter-yy_MM_dd HH;mm-ss</option>
+                    <option value="muter-yy_MM_dd HHmmss">muter-yy_MM_dd HHmmss</option>
+                    <option value="muter-yy_MM_dd HH;mm">muter-yy_MM_dd HH;mm</option>
+                    <option value="muter-MM_dd HH;mm-ss">muter-MM_dd HH;mm-ss</option>
+                    <option value="muter-MM_dd HHmmss">muter-MM_dd HHmmss</option>
+                    <option value="muter-MM_dd HH;mm">muter-MM_dd HH;mm</option>
+                </select>
+            </div>
+            <!-- 閉じるボタン -->
+            <button id="close-settings">閉じる</button>
+        </div>
+    </div>
+    <script>
+        const video = document.getElementById('video');
+        const shutterButton = document.getElementById('shutter-button');
+        const switchModeButton = document.getElementById('switch-mode');
+        const flash = document.getElementById('flash');
+        const switchCameraButton = document.getElementById('switch-camera');
+        const zoomButton = document.getElementById('zoom-button');
+        const zoomSlider = document.getElementById('zoom-slider');
+        const muteButton = document.getElementById('mute-button');
+        const settingsButton = document.getElementById('settings-button');
+        const settingsWindow = document.getElementById('settings-window');
+        const closeSettingsButton = document.getElementById('close-settings');
+        const photoFormatSelect = document.getElementById('photo-format');
+        const buttonLayoutSelect = document.getElementById('button-layout');
+        const filenameFormatSelect = document.getElementById('filename-format');
+        const controls = document.getElementById('controls');
 
-if (navigator.mediaDevices.getUserMedia) {
-  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }, facingMode: useFrontCamera ? "user" : "environment"}}).then(function (stream) {
-    video.srcObject = stream;
-  }).catch(function (error) {
-    console.log("Something went wrong!");
-  });
-}
+        let mediaStream = null;
+        let mediaRecorder = null;
+        let chunks = [];
+        let mode = 'photo'; // 現在のモードを保持
+        let zoomLevel = 1;
+        let videoTrack = null;
+        let currentFacingMode = 'environment'; // 初期カメラは背面
+        let isMuted = false; // 消音状態
+        let photoFormat = 'jpeg'; // 写真の出力形式
+        let buttonLayout = 'right'; // ボタンの配置
+        let filenameFormat = 'muter-yyyy_MM_dd HH;mm-ss'; // ファイル名の出力形式
 
-shutterButton.addEventListener("click", function() {
-  shutterButton.style.animation = 'pulse 1s';
-  var canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  var context = canvas.getContext('2d');
-  context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
-  var dataURL = canvas.toDataURL();
-  previewImage.setAttribute('src', dataURL);
-  previewImage.style.display = 'block';
-  setTimeout(function() {
-    shutterButton.style.animation = '';
-  }, 1000);
-});
+        // カメラの初期化
+        async function initCamera(facingMode) {
+            try {
+                const constraints = {
+                    video: { 
+                        facingMode: facingMode ? { exact: facingMode } : 'environment',
+                        width: { ideal:9999 },
+                        height: { ideal: 9999 }
+                    },
+                    audio: true // 音声を含める
+                };
+                mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = mediaStream;
+                video.muted = true; // 自分のマイクの音を消音にする
 
-switchButton.addEventListener("click", function() {
-  useFrontCamera = !useFrontCamera;
-  if (video.srcObject) video.srcObject.getTracks().forEach(track => track.stop());
-  navigator.mediaDevices.getUserMedia({video: {width: { ideal: 4096 },height: { ideal: 2160 }, facingMode: useFrontCamera ? "user" : "environment"}}).then(function (stream) {
-    video.srcObject = stream;
-  }).catch(function (error) {
-    console.log("Something went wrong!");
-  });
-});
-</script>
+                // ビデオトラックの取得
+                videoTrack = mediaStream.getVideoTracks()[0];
+                // カメラの能力を取得
+                let capabilities = videoTrack.getCapabilities();
+
+                // 最大解像度を設定
+                let settingsConstraints = {};
+                if (capabilities.width && capabilities.height) {
+                    settingsConstraints.width = capabilities.width.max;
+                    settingsConstraints.height = capabilities.height.max;
+                }
+                // 初期拡大率を適用
+                if (capabilities.zoom) {
+                    settingsConstraints.zoom = zoomLevel;
+                }
+                if (Object.keys(settingsConstraints).length > 0) {
+                    await videoTrack.applyConstraints(settingsConstraints);
+                }
+
+            } catch (error) {
+                console.error('カメラにアクセスできませんでした：', error);
+            }
+        }
+
+        // カメラを起動
+        (async () => {
+            // 設定を読み込む
+            loadSettings();
+            await initCamera(currentFacingMode);
+            applyButtonLayout(); // 初期ボタン配置を適用
+        })();
+
+        // シャッターボタンのクリックイベント
+        shutterButton.addEventListener('click', () => {
+            if (mode === 'photo') {
+                takePhoto();
+            } else if (mode === 'video') {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            }
+        });
+
+        // モード切替ボタンのクリックイベント
+        switchModeButton.addEventListener('click', () => {
+            if (mode === 'photo') {
+                mode = 'video';
+                switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE04B;</span>'; // 動画アイコン
+                shutterButton.style.borderColor = 'red';
+                muteButton.style.visibility = 'visible'; // 消音ボタンを表示
+            } else {
+                mode = 'photo';
+                switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE412;</span>'; // 写真アイコン
+                shutterButton.style.borderColor = 'white';
+                shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                muteButton.style.visibility = 'hidden'; // 消音ボタンを非表示
+            }
+        });
+
+        // カメラ切替ボタンのクリックイベント
+        switchCameraButton.addEventListener('click', async () => {
+            // すべてのトラックを停止
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+            }
+
+            // カメラの向きを切り替え
+            currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+            await initCamera(currentFacingMode);
+        });
+
+        // 消音ボタンのクリックイベント
+        muteButton.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (isMuted) {
+                muteButton.innerHTML = '<span class="material-symbols-outlined">&#xE02B;</span>'; // 消音アイコン
+            } else {
+                muteButton.innerHTML = '<span class="material-symbols-outlined">&#xE029;</span>'; // 音声アイコン
+            }
+        });
+
+        // 設定ボタンのクリックイベント
+        settingsButton.addEventListener('click', () => {
+            settingsWindow.style.display = 'flex';
+        });
+
+        // 設定ウィンドウを閉じる
+        closeSettingsButton.addEventListener('click', () => {
+            settingsWindow.style.display = 'none';
+            // 設定を適用
+            photoFormat = photoFormatSelect.value;
+            buttonLayout = buttonLayoutSelect.value;
+            filenameFormat = filenameFormatSelect.value;
+            applyButtonLayout();
+            saveSettings(); // 設定を保存
+        });
+
+        // ボタン配置を適用する関数
+        function applyButtonLayout() {
+            controls.style.flexDirection = (buttonLayout === 'top' || buttonLayout === 'bottom') ? 'row' : 'column';
+            controls.style.top = (buttonLayout === 'top') ? '0' : (buttonLayout === 'bottom') ? 'auto' : '0';
+            controls.style.bottom = (buttonLayout === 'bottom') ? '0' : 'auto';
+            controls.style.left = (buttonLayout === 'left') ? '0' : 'auto';
+            controls.style.right = (buttonLayout === 'right') ? '0' : 'auto';
+            controls.style.justifyContent = 'center';
+            controls.style.alignItems = 'center';
+            controls.style.width = (buttonLayout === 'left' || buttonLayout === 'right') ? 'auto' : '100%';
+            controls.style.height = (buttonLayout === 'top' || buttonLayout === 'bottom') ? 'auto' : '100%';
+        }
+
+        // 設定を保存する関数
+        function saveSettings() {
+            const settings = {
+                photoFormat: photoFormat,
+                buttonLayout: buttonLayout,
+                filenameFormat: filenameFormat
+            };
+            localStorage.setItem('cameraAppSettings', JSON.stringify(settings));
+        }
+
+        // 設定を読み込む関数
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('cameraAppSettings'));
+            if (settings) {
+                photoFormat = settings.photoFormat || 'jpeg';
+                buttonLayout = settings.buttonLayout || 'right';
+                filenameFormat = settings.filenameFormat || 'muter-yyyy_MM_dd HH;mm-ss';
+
+                // セレクトボックスの値を設定
+                photoFormatSelect.value = photoFormat;
+                buttonLayoutSelect.value = buttonLayout;
+                filenameFormatSelect.value = filenameFormat;
+            }
+        }
+
+        // 写真を撮影
+        function takePhoto() {
+            // フラッシュ効果
+            flash.style.opacity = '1';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+            }, 100);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+
+                // 撮影日時を取得してファイル名に使用
+                const now = new Date();
+                const formattedDate = formatDate(now, filenameFormat);
+                a.download = formattedDate + '.' + (photoFormat === 'jpeg' ? 'jpg' : 'png');
+
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 'image/' + photoFormat);
+        }
+
+        // 録画を開始
+        function startRecording() {
+            chunks = [];
+            let options = null;
+
+            // サポートされているMIMEタイプを検出
+            const mimeTypes = [
+                'video/webm;codecs=vp9','video/webm;codecs=vp8',
+                'video/webm',
+                'video/mp4',
+                'video/x-matroska;codecs=avc1',
+                'video/mpeg'
+            ];
+
+            for (let i = 0; i < mimeTypes.length; i++) {
+                if (MediaRecorder.isTypeSupported(mimeTypes[i])) {
+                    options = { mimeType: mimeTypes[i] };
+                    break;
+                }
+            }
+
+            // MIMEタイプがサポートされていない場合
+            if (options === null) {
+                options = {};
+            }
+
+            try {
+                // 音声トラックを制御
+                mediaStream.getAudioTracks().forEach(track => {
+                    track.enabled = !isMuted;
+                });
+
+                mediaRecorder = new MediaRecorder(mediaStream, options);
+            } catch (e) {
+                alert('このブラウザ・デバイスでは録画機能がサポートされていません。');
+                console.error('MediaRecorderの初期化に失敗しました：', e);return;
+            }
+
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    chunks.push(e.data);
+                }
+            };
+            mediaRecorder.onstop = saveVideo;
+            mediaRecorder.start();
+            shutterButton.style.backgroundColor = 'red';
+        }
+
+        // 録画を停止
+        function stopRecording() {
+            mediaRecorder.stop();
+            shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
+        }
+
+        // 動画を保存
+        function saveVideo() {
+            const blob = new Blob(chunks, { type: mediaRecorder.mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            let fileExtension = 'webm';
+            if (mediaRecorder.mimeType.includes('mp4')){
+                fileExtension = 'mp4';
+            } else if (mediaRecorder.mimeType.includes('ogg')){
+                fileExtension = 'ogv';
+            } else if (mediaRecorder.mimeType.includes('x-matroska')){
+                fileExtension = 'mkv';
+            } else if (mediaRecorder.mimeType.includes('mpeg')){
+                fileExtension = 'mpeg';
+            }
+
+            // 撮影日時を取得してファイル名に使用
+            const now = new Date();
+            const formattedDate = formatDate(now, filenameFormat);
+
+            // ファイル名を設定
+            a.download = formattedDate + '.' + fileExtension;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ファイル名のフォーマット関数
+        function formatDate(date, format) {
+            const map = {
+                'yyyy': date.getFullYear(),
+                'yy': ('0' + (date.getFullYear() % 100)).slice(-2),
+                'MM': ('0' + (date.getMonth() + 1)).slice(-2),
+                'dd': ('0' + date.getDate()).slice(-2),
+                'HH': ('0' + date.getHours()).slice(-2),
+                'mm': ('0' + date.getMinutes()).slice(-2),
+                'ss': ('0' + date.getSeconds()).slice(-2),
+            };
+            return format.replace(/yyyy|yy|MM|dd|HH|mm|ss/g, matched => map[matched]);
+        }
+
+        // 拡大ボタンの処理
+        let pressTimer;
+        zoomButton.addEventListener('mousedown', e => {
+            e.preventDefault();
+            pressTimer = setTimeout(showZoomSlider, 500);
+        });
+        zoomButton.addEventListener('mouseup', e => {
+            e.preventDefault();
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                toggleZoom();
+            }
+        });
+        zoomButton.addEventListener('mouseleave', e => {
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+            }
+        });
+        zoomButton.addEventListener('touchstart', e => {
+            e.preventDefault();
+            pressTimer = setTimeout(showZoomSlider, 500);
+        });
+        zoomButton.addEventListener('touchend', e => {
+            e.preventDefault();
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                toggleZoom();
+            }
+        });
+        function toggleZoom(){
+            if (zoomLevel === 1){
+                zoomLevel = 2;
+            } else {
+                zoomLevel = 1;
+            }
+            applyZoom();
+        }
+
+        let zoomSliderTimeout;
+
+        function showZoomSlider(){
+            zoomSlider.style.display = 'block';
+            resetZoomSliderTimeout();
+        }
+
+        zoomSlider.addEventListener('input', e => {
+            zoomLevel = parseFloat(zoomSlider.value);
+            applyZoom();
+            resetZoomSliderTimeout();
+        });
+
+        function applyZoom(){
+            if(!videoTrack) return;
+            let capabilities = videoTrack.getCapabilities();
+            if(capabilities.zoom){
+                let constraints = { advanced: [{ zoom: zoomLevel }] };
+                videoTrack.applyConstraints(constraints);
+                zoomButton.textContent = 'x' + zoomLevel.toFixed(1);
+            }
+        }
+
+        function resetZoomSliderTimeout() {
+            if (zoomSliderTimeout) {
+                clearTimeout(zoomSliderTimeout);
+            }
+            zoomSliderTimeout = setTimeout(() => {
+                zoomSlider.style.display = 'none';
+            }, 3000); // 3秒後に非表示
+        }
+
+    </script>
 </body>
 </html>
