@@ -30,7 +30,8 @@
             width: 100%;
             height: 100%;
             background-color: white;
-            opacity: 0;pointer-events: none;
+            opacity: 0;
+            pointer-events: none;
             transition: opacity 0.1s;
         }
         /* コントロールの配置 */
@@ -51,13 +52,14 @@
             border-radius: 50%;
             margin: 0 20px;
             cursor: pointer;
-            transition: background-color 0.2s;
+            transition: background-color 0.2s, transform 0.1s;
         }
         #shutter-button:active {
             background-color: rgba(255,255,255,0.5);
+            transform: scale(0.9);
         }
-        /* モード切替ボタンのスタイル */
-        #switch-mode {
+        /* 共通のボタンスタイル */
+        .control-button {
             background-color: rgba(0,0,0,0.5);
             color: white;
             border: none;
@@ -69,43 +71,45 @@
             align-items: center;
             justify-content: center;
             margin: 0 10px;
+            transition: background-color 0.2s, transform 0.1s;
         }
-        /* カメラ切替ボタンのスタイル */
-        #switch-camera {
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 10px;
-        }
-        /* 拡大ボタンのスタイル */
-        #zoom-button {
-            background-color: rgba(0,0,0,0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            width: 50px;
-            height: 50px;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 10px;
+        .control-button:active {
+            background-color: rgba(255,255,255,0.2);
+            transform: scale(0.9);
         }
         /* 拡大スライダーのスタイル */
         #zoom-slider {
+            -webkit-appearance: none;
+            width: 80%;
+            margin: 0;
             position: absolute;
             bottom: 100px;
-            width: 80%;
             left: 10%;
             display: none;
+        }
+        #zoom-slider::-webkit-slider-runnable-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        #zoom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            margin-top: -6px;
+        }
+        #zoom-slider::-moz-range-track {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 4px;
+        }
+        #zoom-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
         }
         /* Material Symbolsのスタイル */
         .material-symbols-outlined {
@@ -130,10 +134,11 @@
     <div id="flash"></div>
     <!-- コントロールボタンの配置 -->
     <div id="controls">
-        <button id="switch-mode"><span class="material-symbols-outlined">&#xE412;</span></button>
-        <button id="zoom-button">x1</button>
+        <button id="switch-mode" class="control-button"><span class="material-symbols-outlined">&#xE412;</span></button>
+        <button id="zoom-button" class="control-button">x1</button>
         <button id="shutter-button"></button>
-        <button id="switch-camera"><span class="material-symbols-outlined">&#xEFEB;</span></button>
+        <button id="switch-camera" class="control-button"><span class="material-symbols-outlined">&#xEFEB;</span></button>
+        <button id="mute-button" class="control-button"><span class="material-symbols-outlined">&#xE029;</span></button>
     </div>
     <!-- 拡大スライダー -->
     <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
@@ -145,6 +150,7 @@
         const switchCameraButton = document.getElementById('switch-camera');
         const zoomButton = document.getElementById('zoom-button');
         const zoomSlider = document.getElementById('zoom-slider');
+        const muteButton = document.getElementById('mute-button');
 
         let mediaStream = null;
         let mediaRecorder = null;
@@ -153,6 +159,7 @@
         let zoomLevel = 1;
         let videoTrack = null;
         let currentFacingMode = 'environment'; // 初期カメラは背面
+        let isMuted = false; // 消音状態
 
         // カメラの初期化
         async function initCamera(facingMode) {
@@ -163,11 +170,11 @@
                         width: { ideal:9999 },
                         height: { ideal: 9999 }
                     },
-                    audio: true
+                    audio: true // 音声を含める
                 };
                 mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
                 video.srcObject = mediaStream;
-                video.muted = true; // マイクの音を消音にする
+                video.muted = true; // 自分のマイクの音を消音にする
 
                 // ビデオトラックの取得
                 videoTrack = mediaStream.getVideoTracks()[0];
@@ -217,11 +224,13 @@
                 mode = 'video';
                 switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE04B;</span>'; // 動画アイコン
                 shutterButton.style.borderColor = 'red';
+                muteButton.style.visibility = 'visible'; // 消音ボタンを表示
             } else {
                 mode = 'photo';
                 switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE412;</span>'; // 写真アイコン
                 shutterButton.style.borderColor = 'white';
                 shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
+                muteButton.style.visibility = 'hidden'; // 消音ボタンを非表示
             }
         });
 
@@ -235,6 +244,16 @@
             // カメラの向きを切り替え
             currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
             await initCamera(currentFacingMode);
+        });
+
+        // 消音ボタンのクリックイベント
+        muteButton.addEventListener('click', () => {
+            isMuted = !isMuted;
+            if (isMuted) {
+                muteButton.innerHTML = '<span class="material-symbols-outlined">&#xE02B;</span>'; // 消音アイコン
+            } else {
+                muteButton.innerHTML = '<span class="material-symbols-outlined">&#xE029;</span>'; // 音声アイコン
+            }
         });
 
         // 写真を撮影
@@ -254,7 +273,17 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'photo.jpg';
+
+                // 撮影日時を取得してファイル名に使用
+                const now = new Date();
+                const formattedDate = now.getFullYear() + '_' +
+                    ('0' + (now.getMonth()+1)).slice(-2) + '_' +
+                    ('0' + now.getDate()).slice(-2) + ' ' +
+                    ('0' + now.getHours()).slice(-2) +
+                    ('0' + now.getMinutes()).slice(-2) +
+                    ('0' + now.getSeconds()).slice(-2);
+                a.download = 'muter-' + formattedDate + '.jpg';
+
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -289,6 +318,11 @@
             }
 
             try {
+                // 音声トラックを制御
+                mediaStream.getAudioTracks().forEach(track => {
+                    track.enabled = !isMuted;
+                });
+
                 mediaRecorder = new MediaRecorder(mediaStream, options);
             } catch (e) {
                 alert('このブラウザ・デバイスでは録画機能がサポートされていません。');
@@ -328,7 +362,19 @@
             } else if (mediaRecorder.mimeType.includes('mpeg')){
                 fileExtension = 'mpeg';
             }
-            a.download = 'video.' + fileExtension;
+
+            // 撮影日時を取得してファイル名に使用
+            const now = new Date();
+            const formattedDate = now.getFullYear() + '_' +
+                ('0' + (now.getMonth()+1)).slice(-2) + '_' +
+                ('0' + now.getDate()).slice(-2) + ' ' +
+                ('0' + now.getHours()).slice(-2) +
+                ('0' + now.getMinutes()).slice(-2) +
+                ('0' + now.getSeconds()).slice(-2);
+
+            // ファイル名を設定（常にmuter-で始まる）
+            a.download = 'muter-' + formattedDate + '.' + fileExtension;
+
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
