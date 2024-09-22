@@ -307,6 +307,7 @@
             loadSettings();
             await initCamera(currentFacingMode);
             applyButtonLayout(); // 初期ボタン配置を適用
+            updateMuteButtonVisibility(); // 初期のmuteButtonの表示を設定
         })();
 
         // シャッターボタンのクリックイベント
@@ -328,14 +329,13 @@
                 mode = 'video';
                 switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE04B;</span>'; // 動画アイコン
                 shutterButton.style.borderColor = 'red';
-                muteButton.style.visibility = 'visible'; // 消音ボタンを表示
             } else {
                 mode = 'photo';
                 switchModeButton.innerHTML = '<span class="material-symbols-outlined">&#xE412;</span>'; // 写真アイコン
                 shutterButton.style.borderColor = 'white';
                 shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
-                muteButton.style.visibility = 'hidden'; // 消音ボタンを非表示
             }
+            updateMuteButtonVisibility();
         });
 
         // カメラ切替ボタンのクリックイベント
@@ -414,6 +414,15 @@
             }
         }
 
+        // 消音ボタンの表示を更新する関数
+        function updateMuteButtonVisibility() {
+            if (mode === 'photo') {
+                muteButton.style.visibility = 'hidden';
+            } else {
+                muteButton.style.visibility = 'visible';
+            }
+        }
+
         // 写真を撮影
         function takePhoto() {
             // フラッシュ効果
@@ -472,11 +481,15 @@
 
             try {
                 // 音声トラックを制御
-                mediaStream.getAudioTracks().forEach(track => {
-                    track.enabled = !isMuted;
-                });
+                let recordingStream;
+                if (isMuted) {
+                    // ビデオトラックのみを含む新しいMediaStreamを作成
+                    recordingStream = new MediaStream(mediaStream.getVideoTracks());
+                } else {
+                    recordingStream = mediaStream;
+                }
 
-                mediaRecorder = new MediaRecorder(mediaStream, options);
+                mediaRecorder = new MediaRecorder(recordingStream, options);
             } catch (e) {
                 alert('このブラウザ・デバイスでは録画機能がサポートされていません。');
                 console.error('MediaRecorderの初期化に失敗しました：', e);return;
