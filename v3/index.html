@@ -10,7 +10,6 @@
             padding: 0;
             overflow: hidden;
             background-color: black;
-            font-family: sans-serif;
         }
         /* ビデオ要素を全画面表示 */
         #video {
@@ -101,68 +100,13 @@
             justify-content: center;
             margin: 0 10px;
         }
-        /* 拡大スライダーコンテナ */
-        #zoom-slider-container {
+        /* 拡大スライダーのスタイル */
+        #zoom-slider {
             position: absolute;
             bottom: 100px;
             width: 80%;
             left: 10%;
             display: none;
-            box-sizing: border-box;
-        }
-        /* 拡大スライダーのスタイル */
-        #zoom-slider {
-            width: 100%;
-            outline: 0;
-            border: 0;
-            border-radius: 500px;
-            transition: box-shadow 0.2s ease-in-out;
-        }
-        /* カスタムスライダーのスタイル（Chrome用） */
-        #zoom-slider::-webkit-slider-runnable-track {
-            height: 40px;
-            background-color: #ddd;
-            border-radius: 500px;
-        }
-        #zoom-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 40px;
-            height: 40px;
-            background: #fff;
-            cursor: ew-resize;
-            border-radius: 50%;
-            position: relative;
-            box-shadow: -340px 0 0 320px #1597ff, inset 0 0 0 40px #1597ff;
-        }
-        #zoom-slider:active::-webkit-slider-thumb {
-            background: #fff;
-            box-shadow: -340px 0 0 320px #1597ff, inset 0 0 0 3px #1597ff;
-        }
-        /* ラベル表示用 */
-        #zoom-label {
-            position: absolute;
-            top: -50px;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-size: 12px;
-            transform-origin: center -10px;
-            transform: translateX(-50%);
-            transition: margin-top 0.15s ease-in-out, opacity 0.15s ease-in-out;
-        }
-        #zoom-label span {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background-color: #1597ff;
-            border-radius: 0 50% 50% 50%;
-            transform: rotate(45deg);
-            z-index: -1;
         }
     </style>
 </head>
@@ -173,16 +117,13 @@
     <div id="flash"></div>
     <!-- コントロールボタンの配置 -->
     <div id="controls">
-        <button id="switch-mode">🎥</button>
+        <button id="switch-mode"><img src="./images/picture.png" alt="Photo Mode" style="width: 30px; height: 30px;"></button>
         <button id="zoom-button">x1</button>
         <button id="shutter-button"></button>
-        <button id="switch-camera">🔄</button>
+        <button id="switch-camera"><img src="./images/reload.png" alt="reload" style="width: 30px; height: 30px;"></button>
     </div>
-    <!-- 拡大スライダーとラベル -->
-    <div id="zoom-slider-container">
-        <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
-        <div id="zoom-label"><span>x1.0</span></div>
-    </div>
+    <!-- 拡大スライダー -->
+    <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1">
     <script>
         const video = document.getElementById('video');
         const shutterButton = document.getElementById('shutter-button');
@@ -191,8 +132,6 @@
         const switchCameraButton = document.getElementById('switch-camera');
         const zoomButton = document.getElementById('zoom-button');
         const zoomSlider = document.getElementById('zoom-slider');
-        const zoomSliderContainer = document.getElementById('zoom-slider-container');
-        const zoomLabel = document.getElementById('zoom-label');
 
         let mediaStream = null;
         let mediaRecorder = null;
@@ -201,16 +140,6 @@
         let zoomLevel = 1;
         let videoTrack = null;
         let currentFacingMode = 'environment'; // 初期カメラは背面
-
-        // OSの判定
-        function getOS() {
-            const userAgent = window.navigator.userAgent;
-            if (userAgent.indexOf('Win') !== -1) return 'Windows';
-            if (userAgent.indexOf('Mac') !== -1) return 'MacOS';
-            if (userAgent.indexOf('X11') !== -1) return 'UNIX';
-            if (userAgent.indexOf('Linux') !== -1) return 'Linux';
-            return 'Unknown';
-        }
 
         // カメラの初期化
         async function initCamera(facingMode) {
@@ -241,12 +170,6 @@
                 // 初期拡大率を適用
                 if (capabilities.zoom) {
                     settingsConstraints.zoom = zoomLevel;
-                    // スライダーの最大値と最小値を設定
-                    zoomSlider.min = capabilities.zoom.min;
-                    zoomSlider.max = capabilities.zoom.max;
-                    zoomSlider.step = capabilities.zoom.step || 0.1;
-                } else {
-                    zoomButton.style.display = 'none'; // ズーム非対応なら非表示
                 }
                 if (Object.keys(settingsConstraints).length > 0) {
                     await videoTrack.applyConstraints(settingsConstraints);
@@ -275,19 +198,19 @@
             }
         });
 
-        // モード切替ボタンのクリックイベント
-        switchModeButton.addEventListener('click', () => {
-            if (mode === 'photo') {
-                mode = 'video';
-                switchModeButton.textContent = '📷'; // 写真モードに切替
-                shutterButton.style.borderColor = 'red';
-            } else {
-                mode = 'photo';
-                switchModeButton.textContent = '🎥'; // 動画モードに切替
-                shutterButton.style.borderColor = 'white';
-                shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
-            }
-        });
+// モード切替ボタンのクリックイベント
+switchModeButton.addEventListener('click', () => {
+    if (mode === 'photo') {
+        mode = 'video';
+        switchModeButton.innerHTML = '<img src="./images/video.png" alt="Video Mode" style="width: 30px; height: 30px;">'; // 写真モードに切替
+        shutterButton.style.borderColor = 'red';
+    } else {
+        mode = 'photo';
+        switchModeButton.innerHTML = '<img src="./images/picture.png" alt="Photo Mode" style="width: 30px; height: 30px;">'; // 動画モードに切替
+        shutterButton.style.borderColor = 'white';
+        shutterButton.style.backgroundColor = 'rgba(255,255,255,0.2)';
+    }
+});
 
         // カメラ切替ボタンのクリックイベント
         switchCameraButton.addEventListener('click', async () => {
@@ -330,9 +253,6 @@
         function startRecording() {
             chunks = [];
             let options = null;
-
-            // OSごとに処理を変える
-            const os = getOS();
 
             // サポートされているMIMEタイプを検出
             const mimeTypes = [
@@ -440,26 +360,20 @@
             } else {
                 zoomLevel = 1;
             }
-            zoomSlider.value = zoomLevel;
             applyZoom();
         }
 
         let zoomSliderTimeout;
 
         function showZoomSlider() {
-            zoomSliderContainer.style.display = 'block';
+            zoomSlider.style.display = 'block';
             resetZoomSliderTimeout();
         }
 
-        zoomSlider.addEventListener('input', function() {
+        zoomSlider.addEventListener('input', e => {
             zoomLevel = parseFloat(zoomSlider.value);
             applyZoom();
             resetZoomSliderTimeout();
-
-            let rangePercent = ((zoomSlider.value - zoomSlider.min) / (zoomSlider.max - zoomSlider.min)) * 100;
-            zoomLabel.querySelector('span').textContent = 'x' + zoomLevel.toFixed(1);
-            zoomLabel.style.left = `calc(${rangePercent}% - 20px)`; // ラベルの位置を調整
-            zoomSlider.style.filter = `hue-rotate(-${rangePercent}deg)`;
         });
 
         function applyZoom() {
@@ -477,7 +391,7 @@
                 clearTimeout(zoomSliderTimeout);
             }
             zoomSliderTimeout = setTimeout(() => {
-                zoomSliderContainer.style.display = 'none';
+                zoomSlider.style.display = 'none';
             }, 3000); // 3秒後に非表示
         }
 
